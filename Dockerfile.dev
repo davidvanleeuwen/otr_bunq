@@ -1,0 +1,27 @@
+ARG ELIXIR_VERSION=1.18.1
+ARG OTP_VERSION=27.2
+ARG DEBIAN_VERSION=bullseye-20250113-slim
+
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}
+
+# Install build dependencies
+RUN apt-get update -y && apt-get install -y \
+    build-essential git inotify-tools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Hex + Rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Set environment
+ENV MIX_ENV=dev
+
+# Install dependencies (optional: live_reload tools, etc.)
+COPY mix.exs mix.lock ./
+RUN mix deps.get
+
+# Expose the default Phoenix port
+EXPOSE 4000

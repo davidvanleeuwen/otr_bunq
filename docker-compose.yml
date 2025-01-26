@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      dockerfile: ./Dockerfile.dev
+    ports:
+      - 4000:4000
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    command: mix phx.server

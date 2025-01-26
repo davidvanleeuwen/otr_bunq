@@ -1,0 +1,35 @@
+<div class="flex flex-col justify-between bg-zinc-900 min-h-screen px-4">
+  <div class="flex flex-col items-center justify-center flex-grow">
+    <div id="confetti"></div>
+    <h1 class="text-9xl font-extrabold text-pink-600">€{@balance}</h1>
+    <p
+      phx-hook="confetti"
+      id="confetti_hook"
+      class="text-6xl text-teal-400 mt-2 text-center px-4 max-w-4xl"
+    >
+      {@message}
+    </p>
+  </div>
+
+  <div :if={@latest_donations |> length > 0} class="relative flex overflow-x-hidden w-full">
+    <div id="marquee_container" phx-hook="marquee" class="whitespace-nowrap flex">
+      <span
+        :for={donation <- @latest_donations}
+        id={"marquee_#{donation.id}"}
+        class="mx-4 text-4xl text-teal-300 font-semibold"
+        data-timestamp={donation.timestamp}
+      >
+        €{donation.amount} (<span class="relative-time">{Timex.from_now(donation.timestamp)}</span>)
+      </span>
+    </div>
+  </div>
+
+  <div class="flex justify-center space-x-8 py-8">
+    <div :for={donation <- @top_donations} class="text-center">
+      <p class="text-4xl text-teal-300 font-semibold">€{donation.amount}</p>
+      <p class="text-sm text-gray-500">
+        {Timex.format!(donation.timestamp, "{WDshort}, {h24}:{m}:{s}")}
+      </p>
+    </div>
+  </div>
+</div>
