@@ -3,110 +3,60 @@ defmodule OtrBunq.GenBalance do
 
   import Ecto.Query
 
-  alias OtrBunq.Client
-  alias OtrBunq.Repo
-  alias OtrBunq.Donation
+  alias OtrBunq.{Client, Repo, Donation}
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
-  def get_balance do
-    GenServer.call(__MODULE__, :get_balance)
-  end
-
-  def get_latest_donations do
-    GenServer.call(__MODULE__, :get_latest_donations)
-  end
-
-  def get_top_donations do
-    GenServer.call(__MODULE__, :get_top_donations)
-  end
-
   @impl true
   def init(_) do
-    IO.puts("Initializing GenBalance...")
     Process.send(self(), :fetch_initial_balance, [])
-    {:ok, %{balance: nil, latest_donations: []}}
+    Process.send(self(), :register_webhook, [])
+    {:ok, %{balance: nil}}
   end
 
   @impl true
   def handle_info(:fetch_initial_balance, state) do
-    IO.puts("Fetching initial balance...")
+    IO.puts("Checking if we need to fetch an initial balance...")
 
-    case Client.get_account_balance() do
-      {:ok, balance} ->
-        IO.puts("Fetched initial balance: #{balance}")
-        schedule_polling()
-        {:noreply, %{state | balance: balance}}
+    case Repo.one(from(d in Donation, select: count(d.id))) do
+      0 ->
+        IO.puts("No donations found, fetching initial balance from Bunq...")
 
-      {:error, reason} ->
-        IO.puts("Failed to fetch initial balance: #{inspect(reason)}")
-        {:noreply, state}
-    end
-  end
+        case Client.get_account_balance() do
+          {:ok, balance} ->
+            initial_amount = String.to_float(balance)
 
-  @impl true
-  def handle_call(:get_balance, _from, state) do
-    {:reply, state.balance, state}
-  end
+            IO.puts("Fetched initial balance: #{initial_amount}, storing as first donation.")
 
-  @impl true
-  def handle_call(:get_latest_donations, _from, state) do
-    latest_donations =
-      Repo.all(
-        from(d in Donation,
-          order_by: [desc: d.inserted_at],
-          limit: 25
-        )
-      )
+            Repo.insert!(%Donation{
+              amount: initial_amount,
+              timestamp: DateTime.truncate(DateTime.utc_now(), :second),
+              bunq_payment_id: 0
+            })
 
-    {:reply, latest_donations, state}
-  end
+            {:noreply, %{state | balance: initial_amount}}
 
-  @impl true
-  def handle_call(:get_top_donations, _from, state) do
-    top_donations =
-      Repo.all(
-        from(d in Donation,
-          order_by: [desc: d.amount],
-          limit: 5
-        )
-      )
-
-    {:reply, top_donations, state}
-  end
-
-  @impl true
-  def handle_info(:poll_balance, state) do
-    case Client.get_account_balance() do
-      {:ok, updated_balance} ->
-        delta =
-          Float.round(String.to_float(updated_balance) - String.to_float(state.balance || "0"), 2)
-
-        if delta > 0 do
-          Repo.insert!(%Donation{
-            amount: delta,
-            timestamp: DateTime.truncate(DateTime.utc_now(), :second)
-          })
-
-          Phoenix.PubSub.broadcast(OtrBunq.PubSub, "balance:updates", %{
-            balance: updated_balance,
-            delta: delta
-          })
+          {:error, reason} ->
+            IO.puts("Failed to fetch initial balance: #{inspect(reason)}")
+            {:noreply, state}
         end
 
-        schedule_polling()
-        {:noreply, %{state | balance: updated_balance}}
-
-      {:error, reason} ->
-        IO.puts("Error polling balance: #{inspect(reason)}")
-        schedule_polling()
-        {:noreply, state}
+      _ ->
+        IO.puts("Existing donations found, skipping Bunq API call.")
+        balance = Repo.aggregate(Donation, :sum, :amount) || 0
+        {:noreply, %{state | balance: balance}}
     end
   end
 
-  defp schedule_polling do
-    Process.send_after(self(), :poll_balance, 10_000)
+  @impl true
+  def handle_info(:register_webhook, state) do
+    case Client.register_webhook() do
+      {:ok, _} -> IO.puts("Webhook setup complete.")
+      {:error, reason} -> IO.puts("Webhook setup failed: #{inspect(reason)}")
+    end
+
+    {:noreply, state}
   end
 end

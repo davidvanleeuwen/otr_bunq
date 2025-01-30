@@ -20,10 +20,11 @@ defmodule OtrBunqWeb.Router do
     live "/", Home
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", OtrBunqWeb do
-  #   pipe_through :api
-  # end
+  scope "/api", OtrBunqWeb do
+    pipe_through :api
+
+    post "/bunq/webhook", WebhookController, :receive_webhook
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:otr_bunq, :dev_routes) do

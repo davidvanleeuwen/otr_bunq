@@ -14,7 +14,8 @@ config :otr_bunq, OtrBunq.Repo,
 
 config :otr_bunq,
   generators: [timestamp_type: :utc_datetime],
-  ecto_repos: [OtrBunq.Repo]
+  ecto_repos: [OtrBunq.Repo],
+  host: System.get_env("HOST")
 
 # Configures the endpoint
 config :otr_bunq, OtrBunqWeb.Endpoint,

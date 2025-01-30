@@ -25,7 +25,8 @@ config :otr_bunq,
   bunq_account_id: System.get_env("BUNQ_ACCOUNT_ID"),
   bunq_api_key: System.get_env("BUNQ_API_KEY"),
   bunq_installation_token: System.get_env("BUNQ_INSTALLATION_TOKEN"),
-  bunq_private_key: System.get_env("BUNQ_PRIVATE_KEY")
+  bunq_private_key: System.get_env("BUNQ_PRIVATE_KEY"),
+  host: System.get_env("HOST")
 
 if config_env() == :prod do
   database_path =

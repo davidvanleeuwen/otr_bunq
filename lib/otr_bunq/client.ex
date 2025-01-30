@@ -3,6 +3,7 @@ defmodule OtrBunq.Client do
   A client for interacting with the Bunq API, focusing on session management.
   """
   @api_base "https://api.bunq.com/v1"
+  @webhook_category "MUTATION"
 
   # Load static environment variables
   defp load_private_key do
@@ -16,8 +17,8 @@ defmodule OtrBunq.Client do
   end
 
   defp api_key, do: Application.fetch_env!(:otr_bunq, :bunq_api_key)
-  def user_id, do: Application.fetch_env!(:otr_bunq, :bunq_user_id)
-  def account_id, do: Application.fetch_env!(:otr_bunq, :bunq_account_id)
+  def user_id, do: Application.fetch_env!(:otr_bunq, :bunq_user_id) |> String.to_integer()
+  def account_id, do: Application.fetch_env!(:otr_bunq, :bunq_account_id) |> String.to_integer()
 
   @session_table :ets.new(:session_table, [:named_table, :set, :public])
 
@@ -67,7 +68,7 @@ defmodule OtrBunq.Client do
         store_session_token(session_token)
         {:ok, session_token}
 
-      {:error, reason} ->
+      {_, reason} ->
         {:error, reason}
     end
   end
@@ -94,8 +95,70 @@ defmodule OtrBunq.Client do
            }} ->
             {:ok, balance}
 
-          {:error, reason} ->
+          {_, reason} ->
             {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def webhook_url do
+    host = Application.fetch_env!(:otr_bunq, :host)
+    "#{host}/api/bunq/webhook"
+  end
+
+  def get_webhooks do
+    case ensure_session() do
+      {:ok, _session_token} ->
+        url = "/user/#{user_id()}/monetary-account/#{account_id()}/notification-filter-url"
+
+        case Req.get(@api_base <> url, headers: client_headers()) do
+          {:ok, %Req.Response{status: 200, body: %{"Response" => response}}} ->
+            webhooks = Enum.map(response, & &1["NotificationFilterUrl"])
+            {:ok, webhooks}
+
+          {_, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def register_webhook do
+    case get_webhooks() do
+      {:ok, webhooks} ->
+        if Enum.any?(webhooks, &(&1["notification_target"] == webhook_url())) do
+          IO.puts("Webhook already registered.")
+          {:ok, :already_registered}
+        else
+          IO.puts("Registering new webhook...")
+
+          body =
+            %{
+              "notification_filters" => [
+                %{
+                  "notification_target" => webhook_url(),
+                  "category" => @webhook_category
+                }
+              ]
+            }
+            |> Jason.encode!()
+
+          url = "/user/#{user_id()}/monetary-account/#{account_id()}/notification-filter-url"
+
+          case Req.post(@api_base <> url, body: body, headers: client_headers()) do
+            {:ok, %Req.Response{status: 200}} ->
+              IO.puts("Webhook successfully registered.")
+              {:ok, :registered}
+
+            {_, reason} ->
+              IO.puts("Failed to register webhook: #{inspect(reason)}")
+              {:error, reason}
+          end
         end
 
       {:error, reason} ->

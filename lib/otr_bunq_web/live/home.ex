@@ -1,7 +1,7 @@
 defmodule OtrBunqWeb.Home do
   use OtrBunqWeb, :live_view
 
-  alias OtrBunq.GenBalance
+  alias OtrBunq.Donations
 
   @messages [
     "Some crazy guy just added €{@delta}! 🎉",
@@ -22,11 +22,11 @@ defmodule OtrBunqWeb.Home do
   ]
 
   def mount(_params, _session, socket) do
-    Phoenix.PubSub.subscribe(OtrBunq.PubSub, "balance:updates")
+    Phoenix.PubSub.subscribe(OtrBunq.PubSub, "donations:updates")
 
-    balance = GenBalance.get_balance()
-    latest_donations = GenBalance.get_latest_donations()
-    top_donations = GenBalance.get_top_donations()
+    balance = Donations.get_balance()
+    latest_donations = Donations.get_latest_donations()
+    top_donations = Donations.get_top_donations()
 
     {:ok,
      assign(socket,
@@ -38,18 +38,25 @@ defmodule OtrBunqWeb.Home do
      )}
   end
 
-  def handle_info(%{balance: new_balance, delta: rounded_delta}, socket) do
-    message = random_message(rounded_delta)
+  def handle_info(
+        %{latest_donations: latest, top_donations: top, balance: new_balance, delta: delta},
+        socket
+      ) do
+    last_donation = hd(latest)
 
-    latest_donations = GenBalance.get_latest_donations()
-    top_donations = GenBalance.get_top_donations()
+    message =
+      if last_donation.description do
+        last_donation.description
+      else
+        random_message(delta)
+      end
 
     {:noreply,
      socket
      |> assign(:message, message)
      |> assign(:balance, new_balance)
-     |> assign(:latest_donations, latest_donations)
-     |> assign(:top_donations, top_donations)
+     |> assign(:latest_donations, latest)
+     |> assign(:top_donations, top)
      |> push_event("confetti", %{})}
   end
 
