@@ -58,7 +58,8 @@ defmodule OtrBunq.MixProject do
       {:req, "~> 0.5.8"},
       {:elixir_uuid, "~> 1.2"},
       {:timex, "~> 3.7"},
-      {:ecto_sqlite3, "~> 0.18.1"}
+      {:ecto_sqlite3, "~> 0.18.1"},
+      {:cidr, "~> 1.2"}
     ]
   end
 

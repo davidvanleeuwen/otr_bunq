@@ -3,7 +3,7 @@ defmodule OtrBunqWeb.WebhookController do
 
   alias OtrBunq.Donations
 
-  @allowed_ips ["185.40.108.0/22"]
+  @allowed_cidr "185.40.108.0/22"
 
   plug :verify_bunq_ip
 
@@ -25,12 +25,35 @@ defmodule OtrBunqWeb.WebhookController do
   end
 
   defp verify_bunq_ip(conn, _opts) do
-    if Enum.any?(@allowed_ips, fn ip ->
-         :inet.parse_address(to_charlist(ip)) == {:ok, conn.remote_ip}
-       end) do
+    real_ip = extract_real_ip(conn)
+
+    if ip_in_cidr?(real_ip, @allowed_cidr) do
       conn
     else
       conn |> send_resp(403, "Unauthorized") |> halt()
+    end
+  end
+
+  defp extract_real_ip(conn) do
+    case get_req_header(conn, "x-forwarded-for") do
+      [ips | _] ->
+        ips
+        |> String.split(",")
+        |> List.first()
+        |> String.trim()
+
+      _ ->
+        Tuple.to_list(conn.remote_ip) |> Enum.join(".")
+    end
+  end
+
+  defp ip_in_cidr?(ip, cidr) do
+    with cidr_struct <- CIDR.parse(cidr),
+         {:ok, true} <- CIDR.match(cidr_struct, ip) do
+      true
+    else
+      _ ->
+        false
     end
   end
 end
