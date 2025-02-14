@@ -1,7 +1,18 @@
-<div class="flex flex-col justify-between bg-zinc-900 min-h-screen px-4">
+<div class="flex flex-col justify-between bg-zinc-900 min-h-screen px-4 items-center text-center">
+  <%!-- Display IBAN --%>
+  <p class="text-2xl text-teal-400 font-semibold mt-8">
+    NL19 BUNQ 2146 3811 91
+  </p>
+
+  <%!-- Display QR Code --%>
+  <img src="/images/qr.svg" alt="Donate QR Code" class="w-32 h-32 mt-4" />
+
+  <%!-- Balance and Message --%>
   <div class="flex flex-col items-center justify-center flex-grow">
     <div id="confetti"></div>
-    <h1 class="text-9xl font-extrabold text-pink-600">€{@balance}</h1>
+    <h1 class="text-9xl font-extrabold text-pink-600 mb-16">
+      €{@balance}<span class="opacity-0">|</span>
+    </h1>
     <p
       phx-hook="confetti"
       id="confetti_hook"
@@ -11,6 +22,7 @@
     </p>
   </div>
 
+  <%!-- Latest Donations (Scrolling) --%>
   <div :if={@latest_donations |> length > 0} class="relative flex overflow-x-hidden w-full">
     <div id="marquee_container" phx-hook="marquee" class="whitespace-nowrap flex">
       <span
@@ -24,6 +36,7 @@
     </div>
   </div>
 
+  <%!-- Top Donations --%>
   <div class="flex justify-center space-x-8 py-8">
     <div :for={donation <- @top_donations} class="text-center">
       <p class="text-4xl text-teal-300 font-semibold">€{donation.amount}</p>
