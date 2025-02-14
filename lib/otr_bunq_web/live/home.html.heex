@@ -40,7 +40,10 @@
         €{Decimal.to_string(donation.amount, :normal)}
         <!-- Adds consistent spacing -->
       (
-        <span class="relative-time">{Timex.from_now(donation.timestamp)}</span>) {donation.description}
+        <span class="relative-time">{Timex.from_now(donation.timestamp)}</span>)
+        <%= unless donation.description |> String.starts_with?("iDEAL bunq.me") do %>
+          {donation.description}
+        <% end %>
         <span class="mx-6">🍌</span>
       </span>
     </div>
