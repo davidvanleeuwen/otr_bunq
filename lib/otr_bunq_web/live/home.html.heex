@@ -37,7 +37,7 @@
         class="mx-4 text-4xl text-teal-300 font-semibold"
         data-timestamp={donation.timestamp}
       >
-        €{Decimal.to_string(donation.amount, :normal)} (<span class="relative-time">{Timex.from_now(donation.timestamp)}</span>)
+        €{Decimal.to_string(donation.amount, :normal)} (<span class="relative-time">{Timex.from_now(donation.timestamp)}</span>) {donation.description} &#127820;
       </span>
     </div>
   </div>
