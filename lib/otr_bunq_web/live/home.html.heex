@@ -19,16 +19,23 @@
       filter: hue-rotate(360deg) brightness(1.2);
     }
   </style>
-  <div :if={@show_special_image} class="absolute inset-0 flex items-center justify-center">
+  <div
+    id="image"
+    phx-hook="ShowCrazyImage"
+    class="hidden absolute inset-0 flex items-center justify-center"
+  >
     <img
       src="/images/photo.jpg"
       alt="Special Donation Image"
       class="w-[80vw] opacity-50 rotate-[15deg] animate-crazy"
     />
   </div>
-  <%!-- Display IBAN --%>
-  <p class="text-2xl text-teal-400 font-semibold mt-8">
-    {@donation_message}
+
+  <p
+    id="donation-message"
+    class="text-2xl text-teal-400 font-semibold mt-8"
+    phx-hook="DonationMessages"
+  >
   </p>
 
   <%!-- Display QR Code --%>

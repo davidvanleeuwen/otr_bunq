@@ -40,9 +40,6 @@ defmodule OtrBunqWeb.Home do
     latest_donations = Donations.get_latest_donations()
     top_donations = Donations.get_top_donations()
 
-    # Start the 20-second interval for changing messages
-    :timer.send_interval(5_000, :change_message)
-
     {:ok,
      assign(socket,
        show_special_image: false,
@@ -71,9 +68,8 @@ defmodule OtrBunqWeb.Home do
 
     show_image = Decimal.eq?(last_donation.amount, Decimal.new("13.37"))
 
-    if show_image do
-      Process.send_after(self(), :hide_special_image, 10_000)
-    end
+    socket =
+      if show_image, do: socket |> push_event("show_crazy_image", %{}), else: socket
 
     {:noreply,
      socket
@@ -81,19 +77,7 @@ defmodule OtrBunqWeb.Home do
      |> assign(:balance, new_balance)
      |> assign(:latest_donations, latest)
      |> assign(:top_donations, top)
-     |> assign(:show_special_image, show_image)
      |> push_event("confetti", %{})}
-  end
-
-  def handle_info(:hide_special_image, socket) do
-    {:noreply, assign(socket, :show_special_image, false)}
-  end
-
-  def handle_info(:change_message, socket) do
-    next_index = rem(socket.assigns.donation_message_index + 1, length(@donation_messages))
-    next_message = Enum.at(@donation_messages, next_index)
-
-    {:noreply, assign(socket, donation_message_index: next_index, donation_message: next_message)}
   end
 
   defp random_message(delta) do

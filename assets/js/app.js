@@ -70,6 +70,46 @@ let liveSocket = new LiveSocket("/live", Socket, {
         }).replace(" ", ", "); // Remove comma to match "Fri 15:29:03"
       }
     },
+    ShowCrazyImage: {
+      mounted() {
+        this.handleEvent("show_crazy_image", () => {
+          this.el.classList.remove("hidden");
+          setTimeout(() => {
+            this.el.classList.add("hidden");
+          }, 6000);
+        });
+      }
+    },
+    DonationMessages: {
+      mounted() {
+        const messages = [
+          "Keep OTR alive by donating to:",
+          "Show some love for OTR! 💙",
+          "Slushpuppies are expensive! 🥤",
+          "Help us keep the lights on!",
+          "Coffee keeps us going! ☕️",
+          "Donate by scanning the QR code:",
+          "Real hackers donate",
+          "Do you have some spare change?",
+          "Send your message with your donation!"
+        ];
+    
+        let index = 0;
+        const messageElement = this.el;
+    
+        function updateMessage() {
+          messageElement.textContent = messages[index];
+          index = (index + 1) % messages.length;
+        }
+    
+        updateMessage();
+        this.interval = setInterval(updateMessage, 5000);
+      },
+    
+      destroyed() {
+        clearInterval(this.interval);
+      }
+    },
     timestamp: {
       mounted() {
         this.updateTimestamps();
