@@ -52,6 +52,24 @@ let liveSocket = new LiveSocket("/live", Socket, {
         });
       },
     },
+    time: {
+      mounted() {
+        this.updateTime();
+      },
+      updateTime() {
+        const timestamp = new Date(this.el.getAttribute("data-timestamp"));
+        this.el.textContent = this.formatLocalTime(timestamp);
+      },
+      formatLocalTime(timestamp) {
+        return timestamp.toLocaleString("en-US", {
+          weekday: "short", // "Fri"
+          hour: "2-digit",  // "15"
+          minute: "2-digit", // "29"
+          second: "2-digit", // "03"
+          hour12: false, // 24-hour format
+        }).replace(" ", ", "); // Remove comma to match "Fri 15:29:03"
+      }
+    },
     timestamp: {
       mounted() {
         this.updateTimestamps();

@@ -42,7 +42,12 @@
       <p class="text-4xl text-teal-300 font-semibold">
         €{Decimal.to_string(donation.amount, :normal)}
       </p>
-      <p class="text-sm text-gray-500">
+      <p
+        class="text-sm text-gray-500"
+        id={"donation_#{donation.id}"}
+        phx-hook="time"
+        data-timestamp={donation.timestamp}
+      >
         {Timex.format!(donation.timestamp, "{WDshort}, {h24}:{m}:{s}")}
       </p>
     </div>
