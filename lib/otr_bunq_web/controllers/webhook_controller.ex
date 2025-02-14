@@ -14,7 +14,7 @@ defmodule OtrBunqWeb.WebhookController do
       {:ok, created, _} = DateTime.from_iso8601(payment["created"] <> "Z")
 
       Donations.add_donation(%{
-        amount: String.to_float(payment["amount"]["value"]),
+        amount: Decimal.new(payment["amount"]["value"]),
         bunq_payment_id: payment["id"],
         description: payment["description"],
         created: created |> DateTime.truncate(:second)
