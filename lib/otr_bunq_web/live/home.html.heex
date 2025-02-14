@@ -34,10 +34,14 @@
       <span
         :for={donation <- @latest_donations}
         id={"marquee_#{donation.id}"}
-        class="mx-4 text-4xl text-teal-300 font-semibold"
+        class=" text-4xl text-teal-300 font-semibold flex items-center"
         data-timestamp={donation.timestamp}
       >
-        €{Decimal.to_string(donation.amount, :normal)} (<span class="relative-time">{Timex.from_now(donation.timestamp)}</span>) {donation.description} &#127820;
+        €{Decimal.to_string(donation.amount, :normal)}
+        <!-- Adds consistent spacing -->
+      (
+        <span class="relative-time">{Timex.from_now(donation.timestamp)}</span>) {donation.description}
+        <span class="mx-6">🍌</span>
       </span>
     </div>
   </div>
