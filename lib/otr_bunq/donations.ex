@@ -16,9 +16,11 @@ defmodule OtrBunq.Donations do
         description: description,
         created: created
       }) do
+    rounded_amount = Decimal.new(amount) |> Decimal.round(2)
+
     donation =
       %Donation{
-        amount: amount,
+        amount: rounded_amount,
         bunq_payment_id: payment_id,
         description: description,
         timestamp: created
@@ -44,7 +46,8 @@ defmodule OtrBunq.Donations do
   Returns the total balance from all donations.
   """
   def get_balance do
-    Repo.aggregate(Donation, :sum, :amount) || 0
+    balance = Repo.aggregate(Donation, :sum, :amount) || Decimal.new(0)
+    Decimal.round(balance, 2)
   end
 
   @doc """
