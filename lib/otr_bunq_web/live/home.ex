@@ -60,7 +60,7 @@ defmodule OtrBunqWeb.Home do
     last_donation = hd(latest)
 
     message =
-      if last_donation.description do
+      if last_donation.description and String.contains?(last_donation.description, "BUNQ") do
         last_donation.description
       else
         random_message(delta)
