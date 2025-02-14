@@ -48,7 +48,7 @@ let liveSocket = new LiveSocket("/live", Socket, {
     
           timeout = setTimeout(() => {
             this.el.classList.add("hidden");
-          }, 10000);
+          }, 30000);
         });
       },
     },

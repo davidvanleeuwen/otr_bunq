@@ -1,30 +1,61 @@
 <div class="flex flex-col justify-between bg-zinc-900 min-h-screen px-4 items-center text-center">
+  <style>
+    @keyframes crazy {
+      0% { transform: rotate(15deg) scale(1) translateX(0) translateY(0); }
+      10% { transform: rotate(25deg) scale(1.1) translateX(10px) translateY(-10px); }
+      20% { transform: rotate(10deg) scale(1.2) translateX(-10px) translateY(10px); }
+      30% { transform: rotate(-15deg) scale(1.1) translateX(5px) translateY(-5px); }
+      40% { transform: rotate(20deg) scale(1.3) translateX(-5px) translateY(5px); }
+      50% { transform: rotate(-10deg) scale(1) translateX(0) translateY(0); }
+      60% { transform: rotate(30deg) scale(1.2) translateX(10px) translateY(-10px); }
+      70% { transform: rotate(-20deg) scale(1.1) translateX(-10px) translateY(10px); }
+      80% { transform: rotate(25deg) scale(1.3) translateX(5px) translateY(-5px); }
+      90% { transform: rotate(-15deg) scale(1.1) translateX(-5px) translateY(5px); }
+      100% { transform: rotate(15deg) scale(1) translateX(0) translateY(0); }
+    }
+
+    .animate-crazy {
+      animation: crazy 2s infinite alternate ease-in-out;
+      filter: hue-rotate(360deg) brightness(1.2);
+    }
+  </style>
+  <div :if={@show_special_image} class="absolute inset-0 flex items-center justify-center">
+    <img
+      src="/images/photo.jpg"
+      alt="Special Donation Image"
+      class="w-[80vw] opacity-50 rotate-[15deg] animate-crazy"
+    />
+  </div>
   <%!-- Display IBAN --%>
   <p class="text-2xl text-teal-400 font-semibold mt-8">
-    NL19 BUNQ 2146 3811 91
+    {@donation_message}
   </p>
 
   <%!-- Display QR Code --%>
-  <img src="/images/qr.svg" alt="Donate QR Code" class="w-32 h-32 mt-4" />
+  <img src="/images/qr.svg" alt="Donate QR Code" class="w-36 h-36 mt-4" />
 
   <%!-- Balance and Message --%>
   <div class="flex flex-col items-center justify-center flex-grow">
     <div id="confetti"></div>
-    <h1 class="text-9xl font-extrabold text-pink-600 mb-16">
+    <h1 class="text-9xl font-extrabold text-pink-600 mb-8">
       €{Decimal.to_string(@balance, :normal)}<span class="opacity-0">|</span>
     </h1>
     <p
       phx-hook="confetti"
       id="confetti_hook"
-      class="text-6xl text-teal-400 mt-2 text-center px-4 max-w-4xl"
+      class="text-6xl font-extrabold text-teal-400 text-center px-4 max-w-4xl"
     >
       {@message}
     </p>
   </div>
 
-  <%!-- Latest Donations (Scrolling) --%>
+  <style>
+      #marquee_container::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
   <div :if={@latest_donations |> length > 0} class="relative flex overflow-x-hidden w-full">
-    <div id="marquee_container" phx-hook="marquee" class="whitespace-nowrap flex">
+    <div id="marquee_container" phx-hook="marquee" class="whitespace-nowrap flex items-center">
       <span
         :for={donation <- @latest_donations}
         id={"marquee_#{donation.id}"}
