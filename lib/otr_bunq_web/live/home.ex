@@ -3,18 +3,6 @@ defmodule OtrBunqWeb.Home do
 
   alias OtrBunq.Donations
 
-  @donation_messages [
-    "Keep OTR alive by donating to:",
-    "Show some love for OTR! 💙",
-    "Slushpuppies are expensive! 🥤",
-    "Help us keep the lights on!",
-    "Coffee keeps us going! ☕️",
-    "Donate by scanning the QR code:",
-    "Real hackers donate",
-    "Do you have some spare change?",
-    "Send your message with your donation!"
-  ]
-
   @messages [
     "Some crazy guy just added €{@delta}! 🎉",
     "💸 A mystery millionaire dropped €{@delta} in the pot!",
@@ -42,14 +30,11 @@ defmodule OtrBunqWeb.Home do
 
     {:ok,
      assign(socket,
-       show_special_image: false,
        balance: balance,
        delta: nil,
        message: nil,
        latest_donations: latest_donations,
-       top_donations: top_donations,
-       donation_message_index: 0,
-       donation_message: List.first(@donation_messages)
+       top_donations: top_donations
      )}
   end
 
@@ -60,21 +45,17 @@ defmodule OtrBunqWeb.Home do
     last_donation = hd(latest)
 
     message =
-      if last_donation.description and String.contains?(last_donation.description, "BUNQ") do
+      if not is_nil(last_donation.description) and
+           String.contains?(last_donation.description, "BUNQ") do
         last_donation.description
       else
         random_message(delta)
       end
 
-    show_image = Decimal.eq?(last_donation.amount, Decimal.new("13.37"))
-
-    socket =
-      if show_image, do: socket |> push_event("show_crazy_image", %{}), else: socket
-
     {:noreply,
      socket
-     |> assign(:message, message)
      |> assign(:balance, new_balance)
+     |> assign(:message, message)
      |> assign(:latest_donations, latest)
      |> assign(:top_donations, top)
      |> push_event("confetti", %{})}
