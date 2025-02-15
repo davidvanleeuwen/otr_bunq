@@ -44,27 +44,70 @@ defmodule OtrBunqWeb.Home do
       ) do
     last_donation = hd(latest)
 
-    dbg(last_donation)
-
     message =
       case extract_bunq_description(last_donation.description) do
-        nil -> random_message(delta)
-        desc -> desc
+        nil -> format(random_message(delta))
+        desc -> format(desc)
       end
 
     {:noreply,
      socket
      |> assign(:balance, new_balance)
      |> assign(:message, message)
-     |> assign(:latest_donations, Enum.take([last_donation | latest], 25))
+     |> assign(
+       :latest_donations,
+       Enum.uniq_by([last_donation | latest], & &1.id) |> Enum.take(25)
+     )
      |> assign(:top_donations, top)
      |> push_event("confetti", %{})}
   end
 
   defp format(description) do
     case extract_bunq_description(description) do
-      nil -> description
-      desc -> desc
+      # Do not escape again here
+      nil -> truncate(description)
+      # Do not escape again here
+      desc -> truncate(desc)
+    end
+  end
+
+  defp truncate(nil), do: nil
+
+  defp truncate(text) do
+    length = String.length(text)
+
+    if length > 75 do
+      max_length = 75
+      text = String.slice(text, 0, max_length)
+
+      # Keep half the text visible
+      visible_length = div(max_length, 2)
+      base = String.slice(text, 0, visible_length)
+      extra = String.slice(text, visible_length, max_length - visible_length)
+
+      fade_steps = String.length(extra)
+
+      fading_effect =
+        extra
+        |> String.graphemes()
+        |> Enum.with_index()
+        |> Enum.map(fn {char, index} ->
+          fade_factor = index / max(fade_steps - 1, 1)
+
+          size = 100 - round(fade_factor * 90)
+          size = if size < 10, do: 10, else: size
+
+          opacity = Float.round(1.0 - fade_factor, 2)
+          opacity = if opacity < 0, do: 0, else: opacity
+
+          "<span style=\"font-size: #{size}%; opacity: #{opacity}\">#{char}</span>"
+        end)
+        |> Enum.join("")
+
+      # Ensure correct rendering
+      Phoenix.HTML.raw("#{base} #{fading_effect}")
+    else
+      text
     end
   end
 
