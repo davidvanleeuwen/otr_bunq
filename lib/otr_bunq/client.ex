@@ -9,11 +9,15 @@ defmodule OtrBunq.Client do
   defp load_private_key do
     private_key_base64 = Application.fetch_env!(:otr_bunq, :bunq_private_key)
 
-    private_key_base64
-    |> Base.decode64!()
-    |> :public_key.pem_decode()
-    |> hd()
-    |> :public_key.pem_entry_decode()
+    if private_key_base64 != "" do
+      private_key_base64
+      |> Base.decode64!()
+      |> :public_key.pem_decode()
+      |> hd()
+      |> :public_key.pem_entry_decode()
+    else
+      nil
+    end
   end
 
   defp api_key, do: Application.fetch_env!(:otr_bunq, :bunq_api_key)
@@ -36,8 +40,12 @@ defmodule OtrBunq.Client do
   defp sign_request(body) do
     private_key = load_private_key()
 
-    :public_key.sign(body, :sha256, private_key)
-    |> Base.encode64()
+    if private_key do
+      :public_key.sign(body, :sha256, private_key)
+      |> Base.encode64()
+    else
+      nil
+    end
   end
 
   defp client_headers(body \\ "") do
