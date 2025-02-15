@@ -58,18 +58,22 @@ defmodule OtrBunq.Client do
 
     installation_token = Application.fetch_env!(:otr_bunq, :bunq_installation_token)
 
-    headers = [
-      {"X-Bunq-Client-Authentication", installation_token} | client_headers(body)
-    ]
+    if installation_token do
+      headers = [
+        {"X-Bunq-Client-Authentication", installation_token} | client_headers(body)
+      ]
 
-    case Req.post(@api_base <> "/session-server", body: body, headers: headers) do
-      {:ok, %Req.Response{status: 200, body: %{"Response" => response}}} ->
-        session_token = get_in(response, [Access.at(1), "Token", "token"])
-        store_session_token(session_token)
-        {:ok, session_token}
+      case Req.post(@api_base <> "/session-server", body: body, headers: headers) do
+        {:ok, %Req.Response{status: 200, body: %{"Response" => response}}} ->
+          session_token = get_in(response, [Access.at(1), "Token", "token"])
+          store_session_token(session_token)
+          {:ok, session_token}
 
-      {_, reason} ->
-        {:error, reason}
+        {_, reason} ->
+          {:error, reason}
+      end
+    else
+      {:error, "Installation token not found."}
     end
   end
 
