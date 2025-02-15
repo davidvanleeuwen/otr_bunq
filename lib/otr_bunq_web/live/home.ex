@@ -59,7 +59,17 @@ defmodule OtrBunqWeb.Home do
        Enum.uniq_by([last_donation | latest], & &1.id) |> Enum.take(25)
      )
      |> assign(:top_donations, top)
-     |> push_event("confetti", %{})}
+     |> push_event("confetti", %{
+       balance: new_balance,
+       amount: Decimal.to_string(last_donation.amount, :normal)
+     })}
+  end
+
+  def handle_event("test", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:message, "test message")
+     |> push_event("confetti", %{balance: 100, amount: "10.00"})}
   end
 
   defp format(description) do

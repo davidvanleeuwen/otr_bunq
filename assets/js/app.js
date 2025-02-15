@@ -32,8 +32,10 @@ let liveSocket = new LiveSocket("/live", Socket, {
       mounted() {
         let timeout;
     
-        this.handleEvent("confetti", () => {
-          this.el.classList.remove("hidden");
+        this.handleEvent("confetti", ({ balance, amount }) => {
+          this.el.querySelector("#message").classList.remove("hidden");
+          this.el.querySelector("#balance").textContent = amount;
+          this.el.querySelector("#added").classList.remove("hidden");
     
           confetti({
             particleCount: 250,
@@ -47,8 +49,10 @@ let liveSocket = new LiveSocket("/live", Socket, {
           }
     
           timeout = setTimeout(() => {
-            this.el.classList.add("hidden");
-          }, 30000);
+            this.el.querySelector("#message").classList.add("hidden");
+            this.el.querySelector("#balance").textContent = balance;
+            this.el.querySelector("#added").classList.add("hidden");
+          }, 20000);
         });
       },
     },
