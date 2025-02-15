@@ -47,8 +47,8 @@ defmodule OtrBunqWeb.Home do
     dbg(last_donation)
 
     message =
-      if not is_nil(last_donation.description) and String.length(last_donation.description) < 80 do
-        last_donation.description
+      if last_donation.description do
+        extract_bunq_description(last_donation.description) || last_donation.description
       else
         random_message(delta)
       end
@@ -57,9 +57,21 @@ defmodule OtrBunqWeb.Home do
      socket
      |> assign(:balance, new_balance)
      |> assign(:message, message)
-     |> assign(:latest_donations, latest)
+     |> assign(:latest_donations, Enum.take(latest, 25))
      |> assign(:top_donations, top)
      |> push_event("confetti", %{})}
+  end
+
+  defp extract_bunq_description(description) do
+    # Match both standard quotes and escaped quotes
+    regex = ~r/bunq\.me\s*["']([^"']+)["']/
+
+    case Regex.run(regex, description) do
+      # Return the matched quoted part
+      [_, match] -> match
+      # Return nil if there's no match
+      _ -> nil
+    end
   end
 
   defp random_message(delta) do
