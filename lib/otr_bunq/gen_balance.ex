@@ -18,35 +18,17 @@ defmodule OtrBunq.GenBalance do
 
   @impl true
   def handle_info(:fetch_initial_balance, state) do
-    IO.puts("Checking if we need to fetch an initial balance...")
+    IO.puts("Fetching all transactions from Bunq...")
 
-    case Repo.one(from(d in Donation, select: count(d.id))) do
-      0 ->
-        IO.puts("No donations found, fetching initial balance from Bunq...")
+    case fetch_and_sync_all_transactions() do
+      {:ok, total_amount} ->
+        IO.puts("Computed total amount from transactions: #{total_amount}")
 
-        case Client.get_account_balance() do
-          {:ok, balance} ->
-            initial_amount = String.to_float(balance)
+        {:noreply, %{state | balance: total_amount}}
 
-            IO.puts("Fetched initial balance: #{initial_amount}, storing as first donation.")
-
-            Repo.insert!(%Donation{
-              amount: initial_amount,
-              timestamp: DateTime.truncate(DateTime.utc_now(), :second),
-              bunq_payment_id: 0
-            })
-
-            {:noreply, %{state | balance: initial_amount}}
-
-          {:error, reason} ->
-            IO.puts("Failed to fetch initial balance: #{inspect(reason)}")
-            {:noreply, state}
-        end
-
-      _ ->
-        IO.puts("Existing donations found, skipping Bunq API call.")
-        balance = Repo.aggregate(Donation, :sum, :amount) || 0
-        {:noreply, %{state | balance: balance}}
+      {:error, reason} ->
+        IO.puts("Failed to fetch transactions: #{inspect(reason)}")
+        {:noreply, state}
     end
   end
 
@@ -58,5 +40,58 @@ defmodule OtrBunq.GenBalance do
     end
 
     {:noreply, state}
+  end
+
+  defp fetch_and_sync_all_transactions do
+    case Client.get_all_transactions() do
+      {:ok, transactions} ->
+        total_amount =
+          transactions
+          |> Enum.reduce(Decimal.new("0.0"), fn tx, acc ->
+            Decimal.add(acc, Decimal.new(tx.amount))
+          end)
+
+        Enum.each(transactions, fn tx ->
+          unless transaction_exists?(tx.bunq_payment_id) do
+            created_at = ensure_utc_offset(tx.created_at)
+
+            case DateTime.from_iso8601(created_at) do
+              {:ok, timestamp, _offset} ->
+                timestamp = DateTime.truncate(timestamp, :second)
+
+                Repo.insert!(%Donation{
+                  amount: Decimal.new(tx.amount),
+                  bunq_payment_id: tx.bunq_payment_id,
+                  description: tx.description,
+                  timestamp: timestamp
+                })
+
+                IO.puts("Inserted missing transaction: #{tx.bunq_payment_id}")
+
+              {:error, reason} ->
+                IO.puts(
+                  "Failed to parse DateTime for transaction #{tx.bunq_payment_id}: #{inspect(reason)}"
+                )
+            end
+          end
+        end)
+
+        {:ok, total_amount}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp ensure_utc_offset(datetime) do
+    if String.ends_with?(datetime, "Z") or Regex.match?(~r/([+-]\d{2}:\d{2})$/, datetime) do
+      datetime
+    else
+      datetime <> "Z"
+    end
+  end
+
+  defp transaction_exists?(payment_id) do
+    Repo.exists?(from(d in Donation, where: d.bunq_payment_id == ^payment_id))
   end
 end

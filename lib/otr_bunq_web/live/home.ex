@@ -47,29 +47,36 @@ defmodule OtrBunqWeb.Home do
     dbg(last_donation)
 
     message =
-      if last_donation.description do
-        extract_bunq_description(last_donation.description) || last_donation.description
-      else
-        random_message(delta)
+      case extract_bunq_description(last_donation.description) do
+        nil -> random_message(delta)
+        desc -> desc
       end
 
     {:noreply,
      socket
      |> assign(:balance, new_balance)
      |> assign(:message, message)
-     |> assign(:latest_donations, Enum.take(latest, 25))
+     |> assign(:latest_donations, Enum.take([last_donation | latest], 25))
      |> assign(:top_donations, top)
      |> push_event("confetti", %{})}
   end
 
+  defp format(description) do
+    case extract_bunq_description(description) do
+      nil -> description
+      desc -> desc
+    end
+  end
+
+  defp extract_bunq_description(nil), do: nil
+
   defp extract_bunq_description(description) do
-    # Match both standard quotes and escaped quotes
-    regex = ~r/bunq\.me\s*["']([^"']+)["']/
+    # Match `"text in quotes"` that comes after `"iDEAL bunq.me"`
+    regex = ~r/iDEAL bunq\.me\s+"([^"]*)"/
 
     case Regex.run(regex, description) do
-      # Return the matched quoted part
+      [_, ""] -> ""
       [_, match] -> match
-      # Return nil if there's no match
       _ -> nil
     end
   end

@@ -91,7 +91,7 @@ let liveSocket = new LiveSocket("/live", Socket, {
           "Donate by scanning the QR code:",
           "Real hackers donate",
           "Do you have some spare change?",
-          "Send your message with your donation!"
+          "Send a message using a description!"
         ];
     
         let index = 0;

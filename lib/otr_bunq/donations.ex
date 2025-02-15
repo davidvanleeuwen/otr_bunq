@@ -56,7 +56,7 @@ defmodule OtrBunq.Donations do
   def get_latest_donations do
     Donation
     |> where([d], d.bunq_payment_id != 0)
-    |> order_by([d], desc: d.inserted_at)
+    |> order_by([d], desc: d.timestamp)
     |> limit(25)
     |> Repo.all()
   end

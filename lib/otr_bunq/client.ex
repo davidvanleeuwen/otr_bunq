@@ -104,6 +104,49 @@ defmodule OtrBunq.Client do
     end
   end
 
+  def get_all_transactions do
+    case ensure_session() do
+      {:ok, _session_token} ->
+        url = "/user/#{user_id()}/monetary-account/#{account_id()}/payment"
+
+        transactions = fetch_all_transactions(url, [])
+
+        case transactions do
+          {:ok, all_txs} -> {:ok, Enum.reverse(all_txs)}
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp fetch_all_transactions(url, acc) do
+    case Req.get(@api_base <> url <> "?count=200", headers: client_headers()) do
+      {:ok, %Req.Response{status: 200, body: %{"Response" => response}}} ->
+        transactions =
+          Enum.map(response, fn %{"Payment" => tx} ->
+            %{
+              bunq_payment_id: tx["id"],
+              amount: tx["amount"]["value"],
+              description: tx["description"],
+              created_at: tx["created"]
+            }
+          end)
+
+        if length(transactions) < 200 do
+          {:ok, acc ++ transactions}
+        else
+          # Continue fetching older transactions (pagination)
+          last_tx_id = transactions |> List.last() |> Map.get(:bunq_payment_id)
+          fetch_all_transactions(url <> "&older_id=#{last_tx_id}", acc ++ transactions)
+        end
+
+      {_, reason} ->
+        {:error, reason}
+    end
+  end
+
   def webhook_url do
     host = Application.fetch_env!(:otr_bunq, :host)
     "#{host}/api/bunq/webhook"
